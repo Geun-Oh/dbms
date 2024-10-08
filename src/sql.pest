@@ -1,4 +1,72 @@
-sql = _{ select_statement | insert_statement }
-select_statement = { "SELECT" ~ ("*" | identifier) ~ "FROM" ~ identifier }
-insert_statement = { "INSERT INTO" ~ identifier ~ "VALUES" ~ "(" ~ (identifier ~ ("," ~ identifier)*)? ~ ")" }
-identifier = @{ ASCII_ALPHANUMERIC+ }
+/////// LIMITATIONS OF CURRENT GRAMMAR
+// quote strings only allow certain characters
+// column_names, etc. are defined as only allowing alpha 
+
+//////// PUNCTUATIONS
+// curly braces
+open_brace = { "{" }
+close_brace = { "}" }
+open_paren = { "(" }
+close_paren = { ")" }
+comma = { "," }
+star = { "*" }
+quote = { "\"" }  // a single quote
+
+//////// SPECIAL
+WHITESPACE = _{ " " }
+
+///////// DATATYPE
+int = { "INT" }
+text = { "TEXT" }
+
+///////// VALUE
+int_val = @{ ("+" | "-")? ~ ASCII_DIGIT+ }
+// legal characters allowed in string
+// text parsing will require more thought
+char = ${ ASCII_ALPHANUMERIC | "+" | "-" | "." }
+quoted_text_val = { quote ~ char* ~ quote }
+literal_text_val = @{ char+ }
+value = { (int_val | quoted_text_val | literal_text_val) }
+
+///////// SQL KEYWORDS/IDENTIFIERS
+// keywords will be case insensitive
+// case insensitivity is specified through '^'
+create_kw = { ^"CREATE" }
+table_kw = { ^"TABLE" }
+select_kw = { ^"SELECT" }
+from_kw = {  ^"FROM" }
+insert_kw = { ^"INSERT" }
+into_kw = { ^"INTO" }
+values_kw = { ^"VALUES" }
+
+table_name = { (ASCII_ALPHA)+ }
+
+///////// CREATE TABLE DEFINITION
+column_name = ${ (ASCII_ALPHA)+ }
+
+column_type = @{ ( int | text ) }
+column_def = { column_name ~ column_type }
+
+table_fields = { (column_def ~ comma)* ~ (column_def)? }
+
+create_table_stmnt = { create_kw ~ table_kw ~ table_name ~
+                       (open_brace ~ table_fields ~ close_brace) }
+
+////////// SELECT STATEMENT
+
+select_stmnt = { select_kw ~ star ~ from_kw ~ table_name }
+
+////////// INSERT STATMENT
+
+column_names = { (column_name ~ comma)* ~ (column_name)? }
+values = { (value ~ comma)* ~ (value)? }
+
+insert_stmnt = { insert_kw ~ into_kw ~ table_name ~ ( open_paren ~ column_names ~ close_paren ) ~
+                 values_kw ~ ( open_paren ~ values ~ close_paren ) }
+
+insert_grammar = { SOI ~ insert_kw ~ into_kw ~ table_name ~ ( open_paren ~ column_names ~ close_paren ) ~
+                  values_kw ~ ( open_paren ~  values ~ close_paren ) ~ EOI }
+
+////////// UNIFIED GRAMMAR
+
+sql_grammar = {SOI ~ (create_table_stmnt | select_stmnt | insert_stmnt ) ~ EOI }
