@@ -4,7 +4,7 @@ use aes::cipher::{BlockEncrypt, generic_array::GenericArray};
 use rand::Rng;
 use base64::{engine, Engine};
 use std::error::Error;
-use std::fs::{File};
+use std::fs::File;
 use std::io::{Read, Write};
 
 const KEY_SIZE: usize = 32;
