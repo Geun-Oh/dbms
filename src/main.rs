@@ -1,48 +1,55 @@
-mod table;
-mod encryption;
 
-use std::{error::Error};
+use std::error::Error;
 
-use encryption::{decrypt_file, encrypt_file};
+// use std::net::TcpStream;
 
-use crate::table::Table;
+// use std::io::{BufReader, BufRead};
+
+use dbms::database::Database;
+use dbms::sql_parser;
 
 fn main() -> Result<(), Box<dyn Error>> {
-	let schema = vec![
-		"num".to_string(),
-		"name".to_string(),
-		"age".to_string(),
-	];
 
-	let mut table = Table::new("users", schema)?;
-	
-	table.insert(vec![
-		"1".to_string(),
-		"Alice".to_string(),
-		"25".to_string(),
-	])?;
+	let mut database = Database::new();
 
-	table.insert(vec![
-		"2".to_string(),
-		"Bob".to_string(),
-		"30".to_string(),
-	])?;
+	database.create_table("users", vec!["id".to_string(), "name".to_string(), "age".to_string()])?;
 
-	table.save_csv()?;
-	table.save_schema()?;
+    let insert_query = "INSERT INTO users VALUES (1, \"John Doe\", 30)";
+    let result = sql_parser::parse_and_execute(insert_query, &mut database)?;
+    println!("Insert result: {:?}", result);
 
-	let key = encryption::generate_key();
-	let csv_path = format!("data/{}/{}.csv", "users", "table");
+    let select_query = "SELECT * FROM users";
+    let result = sql_parser::parse_and_execute(select_query, &mut database)?;
+    println!("Select result: {:?}", result);
+	// run TCP server
+	// let listener = TcpListener::bind("127.0.0.1:9876")?;
+	// println!("Server is running on 9876...");
 
-	// encrypt_file(&csv_path, &key)?;
-
-	// decrypt_file(&csv_path, &key)?;
-
-	table.patch(&"1".to_string(),r#"{"name":"change"}"#)?;
-		
-	if let Some(row) = table.select(&"1".to_string()) {
-		println!("Found row: {:?}", row);
-	}
+	// for stream in listener.incoming() {
+	// 	match stream {
+	// 		Ok(stream) => {
+	// 			std::thread::spawn(move || {
+	// 			})
+	// 		}	
+	// 		Err(e) => {
+	// 			eprintln!("연결 실패: {}", e)
+	// 		}
+	// 	}
+	// }
 
 	Ok(())
 }
+
+// fn handle_client(mut stream: TcpStream) -> Result<(), Box<dyn Error>> {
+// 	let mut reader = BufReader::new(&stream);
+// 	let mut buffer = String::new();
+
+// 	loop {
+// 		buffer.clear();
+// 		reader.read_line(&mut buffer)?;
+
+// 		if buffer.trim().is_empty() {
+			
+// 		}
+// 	}
+// }

@@ -1,64 +1,28 @@
-use std::collections::HashMap;
-
 use pest::Parser;
 use pest_derive::Parser;
+use std::error::Error;
+
+use crate::database::Database;
+use crate::query_optimizer::Optimizer;
 
 #[derive(Parser)]
-#[grammar = "sql.pest"] // .pest defines grammar of SQL 
+#[grammar = "sql.pest"] 
 pub struct SQLParser;
 
-#[derive(Debug)]
-enum ExecutionStep {
-    Scan(String),
-    Filter(String),
-    Project(Vec<String>),
-    Insert(String, Vec<String>, Vec<String>),
-}
+pub fn parse_and_execute(query: &str, database: &mut Database) -> Result<Vec<Vec<String>>, Box<dyn Error>> {
+    // let pairs = SQLParser::parse(Rule::sql_grammar, query)
+    //     .expect("Failed to parse SQL")
+    //     .next()
+    //     .unwrap();
 
-struct Optimizer {
-    table_stats: HashMap<String, usize>
-}
 
-impl Optimizer {
-    fn new() -> Self {
-        Optimizer {
-            table_stats: HashMap::new(),
-        }
+    let mut optimizer = Optimizer::new(database.clone());
+    let plan = optimizer.optimize(query);
+
+    println!("Execution plan:");
+    for step in &plan {
+        println!("{:?}", step);
     }
 
-    fn optimize(&self, query: &str) -> Vec<ExecutionStep> {
-        let pairs = SQLParser::parse(Rule::sql_grammar, query)
-            .expect("Failed to parse SQL")
-            .next().unwrap();
-
-        for pair in pairs.into_inner() {
-            match pair.as_rule() {
-                Rule::select_stmnt => return,
-                Rule::select_stmnt => return,
-                _ => panic!("Unsupported statement type"),
-            }
-        }
-
-        vec![]
-    }
-
-    fn optimize_select(&self, select_pair: pest::iterators::Pair<Rule>) -> Vec<ExecutionStep> {
-        let mut plan = Vec::new();
-        let mut table_name = String::new();
-
-        for pair in select_pair.into_inner() {
-            match pair.as_rule() {
-                Rule::table_name => {
-                    table_name = pair.as_str().to_string();
-                    plan.push(ExecutionStep::Scan(table_name::clone()));
-                }
-                Rule::star => {
-                    plan.push(ExecutionStep::Project(vec!["*".to_string()]));
-                }
-                _ => {}
-            }
-        }
-
-        plan
-    }
+    optimizer.execute_plan(&plan)
 }

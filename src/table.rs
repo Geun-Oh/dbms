@@ -11,11 +11,12 @@ struct TableSchema {
 	columns: Vec<String>,
 }
 
+#[derive(Clone)]
 pub struct Table {
-	rows: Vec<Vec<String>>,
-	index: BTreeMap<String, usize>,
-	schema: TableSchema,
-	path: PathBuf,
+	pub rows: Vec<Vec<String>>,
+	pub index: BTreeMap<String, usize>,
+	pub schema: TableSchema,
+	pub path: PathBuf,
 }
 
 
