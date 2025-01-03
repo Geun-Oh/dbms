@@ -55,4 +55,4 @@ jobs:
         run: |
           git add CHANGELOG.md
           git commit -m "docs: update CHANGELOG.md for ${{ steps.release-info.outputs.tag_name }}"
-          git push origin HEAD
+          git push origin ${{ github.ref_name }}
