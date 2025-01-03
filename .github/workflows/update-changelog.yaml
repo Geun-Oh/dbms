@@ -24,10 +24,12 @@ jobs:
         with:
           script: |
             const release = context.payload.release;
+            const ref = "${{github.ref}}"
             return {
               tag_name: release.tag_name || '',
               body: release.body || 'No release notes provided.',
             };
+            console.log(ref);
 
       # 3. 기존 CHANGELOG.md 파일 업데이트
       - name: Update CHANGELOG.md
