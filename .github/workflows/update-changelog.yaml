@@ -1,0 +1,58 @@
+name: Update CHANGELOG with Release Notes
+
+on:
+  release:
+    types:
+      - published  # 새로운 릴리즈가 생성될 때 실행
+
+permissions:
+  contents: write  # CHANGELOG.md 업데이트를 위해 권한 설정
+
+jobs:
+  update-changelog:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. 코드 체크아웃
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      # 2. 릴리즈 정보 가져오기
+      - name: Get release information
+        id: release-info
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const release = await github.rest.repos.getReleaseByTag({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              tag: context.payload.release.tag_name,
+            });
+            return {
+              tag_name: release.data.tag_name,
+              body: release.data.body,
+            };
+
+      # 3. 기존 CHANGELOG.md 파일 업데이트
+      - name: Update CHANGELOG.md
+        run: |
+          echo "## ${{ steps.release-info.outputs.tag_name }}" > new_changelog.md
+          echo "" >> new_changelog.md
+          echo "${{ steps.release-info.outputs.body }}" >> new_changelog.md
+          echo "" >> new_changelog.md
+          cat CHANGELOG.md >> new_changelog.md
+          mv new_changelog.md CHANGELOG.md
+
+      # 4. GitHub Actions 봇 계정 설정 및 변경 사항 커밋
+      - name: Configure Git user
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Commit and push changes
+        run: |
+          git add CHANGELOG.md
+          git commit -m "docs: update CHANGELOG.md for ${{ steps.release-info.outputs.tag_name }}"
+          git push origin HEAD
